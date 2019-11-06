@@ -27,6 +27,7 @@ function onMouseIn(self, ax)
         if isvalid(roi)
             roi.Tag = '';
             self.Session.changeMask(roi, self.Settings.Mode);
+            self.IsDirty = true;
             delete(roi);
             self.onMouseIn(ax); % Recursion!
         end
