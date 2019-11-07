@@ -326,10 +326,10 @@ classdef MaskComparer < uiw.mixin.AssignPVPairs
                 self.Masks{self.CurrMask2}.Mask = m2 - overlap;
             end   
             self.IsDirty = true;
-            self.GUI.Buttons.CrossPanel.(sprintf('Pr%gc%g',self.CurrMask1,self.CurrMask2)).BackgroundColor = [0 .8 0];
+            self.redraw();
             
             % generate masks from scratch
-            self.redraw();
+
             self.compare_masks(self.CurrMask1,self.CurrMask2);
         end
         
