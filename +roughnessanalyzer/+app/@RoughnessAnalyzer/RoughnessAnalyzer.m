@@ -65,6 +65,8 @@ classdef RoughnessAnalyzer < uiw.abstract.SingleSessionApp
         
         onRenameScan(self, k);
         onRenameMask(self, k, l);
+        
+        onInspectMasks(self, nscan);
     end
     
     %% Mouse Callbacks
