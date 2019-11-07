@@ -27,7 +27,8 @@ classdef MaskComparer < uiw.mixin.AssignPVPairs
         IsDirty = false
     end
     
-    methods
+    methods 
+        %% Constructor
         function self = MaskComparer( varargin )
             self.Figure = uifigure('visible','off','Name', self.AppName);
             self.Figure.Position(3:4) = [1200 600];
@@ -86,7 +87,7 @@ classdef MaskComparer < uiw.mixin.AssignPVPairs
             
             % add panel to upper row
             
-            self.GUI.ActionButtonPanel = uipanel(self.Layout.ActionButtonsGrid, 'Title', 'Remove overlap from...');
+            self.GUI.ActionButtonPanel = uipanel(self.Layout.ActionButtonsGrid, 'Title', 'Remove overlap from');
             
             
             % make a grid of three rows and one column for the buttons
@@ -117,13 +118,15 @@ classdef MaskComparer < uiw.mixin.AssignPVPairs
             
             % Add buttons
             
-            self.GUI.Buttons.Display.M1 = uibutton(self.Layout.AxGrid);
+            
+            
+            self.GUI.Buttons.Display.M1 = uibutton( self.Layout.AxGrid, 'state' );
             self.GUI.Buttons.Display.M1.Layout.Row = 2;
             self.GUI.Buttons.Display.M1.Layout.Column = 1;
-            self.GUI.Buttons.Display.M2 = uibutton(self.Layout.AxGrid);
+            self.GUI.Buttons.Display.M2 = uibutton( self.Layout.AxGrid, 'state' );
             self.GUI.Buttons.Display.M2.Layout.Row = 2;
             self.GUI.Buttons.Display.M2.Layout.Column = 2;
-            self.GUI.Buttons.Display.Overlap = uibutton(self.Layout.AxGrid, 'Text', 'Overlap'); 
+            self.GUI.Buttons.Display.Overlap = uibutton( self.Layout.AxGrid, 'state', 'Text', 'Overlap', 'Value', true); 
             self.GUI.Buttons.Display.Overlap.Layout.Row = 2;
             self.GUI.Buttons.Display.Overlap.Layout.Column = 3;
             
@@ -168,7 +171,6 @@ classdef MaskComparer < uiw.mixin.AssignPVPairs
                         b.Layout.Row = r+1;
                         b.Layout.Column = c;
                         if any(any(m1 & m2))
-                            
                             b.BackgroundColor = [.8 0 0];
                         else
                             b.BackgroundColor = [0 .8 0];
@@ -193,9 +195,10 @@ classdef MaskComparer < uiw.mixin.AssignPVPairs
             self.GUI.Buttons.Action.M2.ButtonPushedFcn =   @(~, ~) self.on_remove(2);
             self.GUI.Buttons.Action.M1M2.ButtonPushedFcn = @(~, ~) self.on_remove(0);
             
-            self.GUI.Buttons.Display.M1.ButtonPushedFcn =       @(~, ~) self.on_display(1);
-            self.GUI.Buttons.Display.M2.ButtonPushedFcn =       @(~, ~) self.on_display(2);
-            self.GUI.Buttons.Display.Overlap.ButtonPushedFcn =  @(~, ~) self.on_display(0);
+            
+            self.GUI.Buttons.Display.M1.ValueChangedFcn =       @self.on_display;
+            self.GUI.Buttons.Display.M2.ValueChangedFcn =       @self.on_display;
+            self.GUI.Buttons.Display.Overlap.ValueChangedFcn =  @self.on_display;
             
             n = numel(self.Masks);
             
@@ -229,12 +232,44 @@ classdef MaskComparer < uiw.mixin.AssignPVPairs
             
             self.GUI.Buttons.Action.M1.Text = self.Masks{self.CurrMask1}.Name;
             self.GUI.Buttons.Action.M2.Text = self.Masks{self.CurrMask2}.Name;
-        end
-        function redraw_masks(self)
             
+            n = numel(self.Masks);
+            
+            rows = 1:n-1;
+            cols = 2:n;
+            
+            for r = rows
+                for c = cols
+                    if any(any(self.Masks{r}.Mask & self.Masks{c}.Mask))
+                        self.GUI.Buttons.CrossPanel.(sprintf('Pr%gc%g',r,c)).BackgroundColor = [.8 0 0];
+                    else
+                        self.GUI.Buttons.CrossPanel.(sprintf('Pr%gc%g',r,c)).BackgroundColor = [0 .8 0];
+                    end
+                end
+            end
         end
-        %% Button Callbacks
         
+        function redraw_masks(self)
+            self.Mask1Img.Visible = 'off';
+            self.Mask2Img.Visible = 'off';
+            self.OverlapImg.Visible = 'off';
+            for n = fieldnames(self.GUI.Buttons.Display)'
+                if self.GUI.Buttons.Display.(n{1}).Value
+                    switch n{1}
+                        case 'M1'
+                            self.Mask1Img.Visible = 'on';
+                        case 'M2'
+                            self.Mask2Img.Visible = 'on';
+                        case 'Overlap'
+                            self.OverlapImg.Visible = 'on';
+                    end
+                    break
+                end
+            end
+        end
+        
+        
+        %% Button Callbacks
         function on_cancel(self)
             % ON_CANCEL Callback for Cancel button and winCloseReq
             if (self.IsDirty & self.prompt_for_cancel()) | ~self.IsDirty
@@ -257,12 +292,48 @@ classdef MaskComparer < uiw.mixin.AssignPVPairs
             self.close();
         end
         
+        function on_display(self, h, e)
+            if ~e.Value 
+                h.Value = true;
+                return
+            end
+            for b = fieldnames(self.GUI.Buttons.Display)'
+                if self.GUI.Buttons.Display.(b{1}) ~= h
+                    self.GUI.Buttons.Display.(b{1}).Value = false;
+                end
+            end
+            self.redraw_masks();
+        end
+        
+        function on_remove( self, which )
+            m1 = self.Masks{self.CurrMask1}.Mask;
+            m2 = self.Masks{self.CurrMask2}.Mask;
+            
+            overlap = m1 & m2;
+            
+            if ~any(overlap(:))
+                return
+            end
+            
+            if which == 0 || which == 1
+                self.Masks{self.CurrMask1}.Mask = m1 - overlap;
+            end
+            if which == 0 || which == 2
+                self.Masks{self.CurrMask2}.Mask = m2 - overlap;
+            end   
+            self.IsDirty = true;
+            self.GUI.Buttons.CrossPanel.(sprintf('Pr%gc%g',self.CurrMask1,self.CurrMask2)).BackgroundColor = [0 .8 0];
+            
+            % generate masks from scratch
+            self.redraw();
+            self.compare_masks(self.CurrMask1,self.CurrMask2);
+        end
+        
         %% App Controls
         function apply(self)
             % APPLY Apply the data
             self.IsDirty = false;
         end
-        
         
         function close(self)
             % CLOSE Close the app
@@ -270,6 +341,32 @@ classdef MaskComparer < uiw.mixin.AssignPVPairs
             delete(self);
         end
         
+        function tf = prompt_for_cancel(self)
+            
+            options = {...
+                'Apply changes and quit', ...
+                'Quit App', ...
+                'Abort cancelation' ...
+            };
+            selection = uiconfirm(self.Figure,...
+                'The masks have been changed. If your cancel the app now, the changes will get lost.', ...
+                'Confirm cancelation', ...
+                'Options', options, ...
+                'DefaultOption', 1, 'CancelOption', 3, ...
+                'Icon', 'warning' ...
+            );
+        
+            switch selection
+                case options{1}
+                    self.apply();
+                    tf = true;
+                case options{2}
+                    tf = true;
+                case options{3}
+                    tf = false;
+            end
+            
+        end
         %% Showing and editing the masks
         
         function compare_masks(self, r, c)
@@ -278,8 +375,12 @@ classdef MaskComparer < uiw.mixin.AssignPVPairs
             self.CurrMask1 = r;
             self.CurrMask2 = c;
             
-            delete(self.Mask1Img);
-            delete(self.Mask2Img);
+            try
+                delete(self.Mask1Img);
+                delete(self.Mask2Img);
+                delete(self.OverlapImg);
+            catch
+            end
             
             sz = size(self.Masks{self.CurrMask1}.Mask);
             
@@ -299,12 +400,14 @@ classdef MaskComparer < uiw.mixin.AssignPVPairs
             
             self.GUI.Axes.NextPlot = onp;
             
-            self.Mask1Img.AlphaData = (~self.Masks{self.CurrMask1}.Mask) * .5;
-            self.Mask2Img.AlphaData = (~self.Masks{self.CurrMask2}.Mask) * .5;
-            self.OverlapImg.AlphaData = (~self.Masks{self.CurrMask1}.Mask & ~self.Masks{self.CurrMask2}.Mask) * .5;
+            self.Mask1Img.AlphaData = (self.Masks{self.CurrMask1}.Mask) * .5;
+            self.Mask2Img.AlphaData = (self.Masks{self.CurrMask2}.Mask) * .5;
+            self.OverlapImg.AlphaData = (self.Masks{self.CurrMask1}.Mask & self.Masks{self.CurrMask2}.Mask) * .5;
             
             self.redraw();
-%            self.redraw_masks();
+            self.redraw_masks();
         end
+        
+        
     end
 end
