@@ -34,7 +34,15 @@ classdef MaskComparer < uiw.mixin.AssignPVPairs
         %% Constructor
         function self = MaskComparer( varargin )
             self.Figure = uifigure('visible','off','Name', self.AppName);
-            self.Figure.Position(3:4) = [1200 600];
+            
+            ssz = phutils.gui.getScreensize();
+            w = min(ssz(1), 1200);
+            h = min(ssz(2), 600);
+            
+            l = (ssz(1)-w)/2;
+            t = 2*(ssz(2)-h)/3;
+            
+            self.Figure.Position = [l t w h];
             self.assignPVPairs(varargin{:});
             if numel(self.Masks) < 2
                 warndlg('At least two masks must be given to compare them. Will not launch Mask Comparison GUI.', 'Warning');
