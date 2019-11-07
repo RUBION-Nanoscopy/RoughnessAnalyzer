@@ -1,5 +1,5 @@
 function onInspectMasks(self, nscan)
-    data = self.DisplayIntensityImage;
+    data = self.DisplayIntensityImage.CData;
     
     switch self.Settings.Display
         case 'slope'
@@ -21,7 +21,7 @@ function onInspectMasks(self, nscan)
     
     rc = roughnessanalyzer.app.MaskComparer(...
         'Masks', self.Session.Scans{nscan}.Masks, ...
-        'onApply',@(m)local_assign_mask(self, nscan, m), ...
+        'onApply',@(m)local_assign_masks(self, nscan, m), ...
         'CLim', CLim, 'CM', CM, 'Data', data ...
     );
 
@@ -29,5 +29,6 @@ function onInspectMasks(self, nscan)
 end
 
 function local_assign_masks(obj, nscan, m)
-
+    obj.Session.Scans{nscan}.Masks = m;
+    obj.IsDirty = true;
 end
