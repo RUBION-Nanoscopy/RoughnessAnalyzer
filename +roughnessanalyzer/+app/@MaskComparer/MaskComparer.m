@@ -1,11 +1,12 @@
 classdef MaskComparer < uiw.mixin.AssignPVPairs
     % App that allows to compare a set of masks
     % I'll try this as an uifigure...
-    properties 
+    properties (Access = public)
         Data
         CLim
         CM
         Masks
+        onApply
     end
     properties(Constant, Access=protected)
         AppName = 'Mask Cleanup'
@@ -25,6 +26,8 @@ classdef MaskComparer < uiw.mixin.AssignPVPairs
         
         IsConstructing
         IsDirty = false
+        
+        
     end
     
     methods 
@@ -187,13 +190,14 @@ classdef MaskComparer < uiw.mixin.AssignPVPairs
         function assign_callbacks(self)
             % ASSIGN_CALLBACKS Assigns callbacks to clickable GUI elements
             
+            self.Figure.CloseRequestFcn = @(~,~) self.on_cancel();
             self.GUI.Buttons.Main.Cancel.ButtonPushedFcn = @(~,~) self.on_cancel();
             self.GUI.Buttons.Main.Apply.ButtonPushedFcn =  @(~,~) self.on_apply();
             self.GUI.Buttons.Main.OK.ButtonPushedFcn =     @(~,~) self.on_OK();
             
-            self.GUI.Buttons.Action.M1.ButtonPushedFcn =   @(~, ~) self.on_remove(1);
-            self.GUI.Buttons.Action.M2.ButtonPushedFcn =   @(~, ~) self.on_remove(2);
-            self.GUI.Buttons.Action.M1M2.ButtonPushedFcn = @(~, ~) self.on_remove(0);
+            self.GUI.Buttons.Action.M1.ButtonPushedFcn =   @(~,~) self.on_remove(1);
+            self.GUI.Buttons.Action.M2.ButtonPushedFcn =   @(~,~) self.on_remove(2);
+            self.GUI.Buttons.Action.M1M2.ButtonPushedFcn = @(~,~) self.on_remove(0);
             
             
             self.GUI.Buttons.Display.M1.ValueChangedFcn =       @self.on_display;
@@ -332,6 +336,7 @@ classdef MaskComparer < uiw.mixin.AssignPVPairs
         %% App Controls
         function apply(self)
             % APPLY Apply the data
+            self.onApply(self.Masks);
             self.IsDirty = false;
         end
         
