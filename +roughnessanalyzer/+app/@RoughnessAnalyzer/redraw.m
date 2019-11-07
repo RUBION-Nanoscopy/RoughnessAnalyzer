@@ -160,8 +160,8 @@ function local_draw_mask( self )
             color = mask.SlopeColor;
             opacity = mask.SlopeOpacity;
         case 'height'
-            color = mask.HeightColor;
-            opacity = mask.HeightOpacity;
+            color = mask.DisplayColor;
+            opacity = mask.DisplayOpacity;
     end
     maskdata = ones(size(scan.SICMScan.zdata_grid, 1), size(scan.SICMScan.zdata_grid, 2), 3);
     
